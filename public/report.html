@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>รายงานเช็คชื่อรายวัน</title>
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --accent: #0f172a;
+      --primary: #2563eb;
+      --success: #16a34a;
+      --error: #dc2626;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Sarabun", "Noto Sans Thai", sans-serif;
+      background: var(--bg);
+      color: var(--accent);
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 24px auto;
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.1);
+      padding: 24px;
+    }
+
+    .date-picker {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    input[type="date"] {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: var(--primary);
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    .no-data {
+      text-align: center;
+      margin-top: 16px;
+      color: #64748b;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 24px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    button {
+      margin-top: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <header>📋 รายงานเช็คชื่อรายวัน</header>
+  <main>
+    <div class="date-picker">
+      <label>เลือกวันที่: </label>
+      <input type="date" id="datePicker">
+      <button id="loadData">โหลดข้อมูล</button>
+    </div>
+
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>ชื่อ</th>
+          <th>เวลาเช็คชื่อ</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <p class="no-data" id="noData">ยังไม่มีข้อมูลเช็คชื่อในวันนี้</p>
+  </main>
+
+  <footer>ระบบรายงานเช็คชื่ออัตโนมัติ</footer>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+   const firebaseConfig = {
+  apiKey: "AIzaSyACQN9qR0HeHSkC5JLR7kVIaJcuraMJzIk",
+  authDomain: "scan-qr-681e1.firebaseapp.com",
+  databaseURL: "https://scan-qr-681e1-default-rtdb.firebaseio.com",
+  projectId: "scan-qr-681e1",
+  storageBucket: "scan-qr-681e1.firebasestorage.app",
+  messagingSenderId: "432167953441",
+  appId: "1:432167953441:web:f2238d89cb06536c6f2f60",
+  measurementId: "G-XBHTXTH9PX"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const tableBody = document.querySelector("#dataTable tbody");
+    const noData = document.getElementById("noData");
+
+    const datePicker = document.getElementById("datePicker");
+    const today = new Date().toISOString().slice(0, 10);
+    datePicker.value = today;
+
+    document.getElementById("loadData").addEventListener("click", loadData);
+
+    function loadData() {
+      const selectedDate = datePicker.value;
+      if (!selectedDate) return;
+
+      const attendanceRef = ref(db, `attendance/${selectedDate}`);
+      onValue(attendanceRef, (snapshot) => {
+        tableBody.innerHTML = "";
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const entries = Object.entries(data);
+          noData.style.display = "none";
+
+          entries.forEach(([name, info], index) => {
+            const row = `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${name}</td>
+                <td>${info.time}</td>
+              </tr>
+            `;
+            tableBody.insertAdjacentHTML("beforeend", row);
+          });
+        } else {
+          noData.style.display = "block";
+        }
+      });
+    }
+
+    // โหลดข้อมูลของวันนี้ทันที
+    loadData();
+  </script>
+</body>
+</html>

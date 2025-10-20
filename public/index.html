@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>🎯 ระบบเช็คชื่อรายวัน</title>
+  <style>
+    :root {
+      --bg1: #93c5fd;
+      --bg2: #bfdbfe;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --accent: #0f172a;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Sarabun", "Noto Sans Thai", sans-serif;
+      background: linear-gradient(-45deg, var(--bg1), var(--bg2), #dbeafe, #eff6ff);
+      background-size: 400% 400%;
+      animation: gradientMove 10s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .card {
+      background: rgba(255,255,255,0.92);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      backdrop-filter: blur(10px);
+      animation: fadeIn 1s ease;
+      width: 90%;
+      max-width: 440px;
+    }
+    h1 { color: var(--primary); margin-bottom: 10px; }
+    .clock { margin-bottom: 20px; font-weight: 600; color: #334155; }
+    input {
+      padding: 12px;
+      width: 80%;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #1e40af; transform: scale(1.05); }
+    #status { margin-top: 16px; font-weight: 600; }
+    #status.success { color: var(--success); }
+    #status.error { color: var(--error); }
+    .toast {
+      position: fixed; top: 20px; right: 20px;
+      background: var(--primary); color: white;
+      padding: 12px 20px; border-radius: 8px;
+      animation: slideIn 0.5s ease;
+    }
+    #qr { margin-top: 20px; }
+    .link-report {
+      display: inline-block; margin-top: 20px;
+      color: var(--primary); text-decoration: none;
+      font-weight: 600;
+    }
+    .link-report:hover { text-decoration: underline; }
+    @keyframes gradientMove {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    @keyframes slideIn {
+      from {opacity: 0; transform: translateX(100px);}
+      to {opacity: 1; transform: translateX(0);}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>📋 ระบบเช็คชื่อรายวัน</h1>
+    <div class="clock" id="clock"></div>
+    <input type="text" id="name" placeholder="ใส่ชื่อของคุณ...">
+    <br>
+    <button onclick="checkIn()">✅ เช็คชื่อ</button>
+    <p id="status"></p>
+
+    <div id="qr"></div>
+    <a class="link-report" href="report.html">📊 ดูรายงานประจำวัน</a>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+  <script type="module" src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const date = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const time = now.toLocaleTimeString('th-TH');
+      document.getElementById("clock").innerText = `📅 ${date} • ⏰ ${time}`;
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    function showToast(msg) {
+      const t = document.createElement("div");
+      t.className = "toast"; t.innerText = msg;
+      document.body.appendChild(t);
+      setTimeout(()=>t.remove(), 2500);
+    }
+
+    function showStatus(msg, type) {
+      const s = document.getElementById("status");
+      s.className = type; s.innerText = msg;
+      showToast(msg);
+    }
+
+    function checkIn() {
+      const name = document.getElementById('name').value.trim();
+      if (!name) return showStatus("⚠️ กรุณากรอกชื่อก่อน", "error");
+
+      if (typeof firebase !== 'undefined') {
+        const today = new Date().toISOString().slice(0,10);
+        const db = firebase.database();
+        db.ref('attendance/' + today + '/' + name).set({
+          time: new Date().toLocaleTimeString('th-TH')
+        }).then(()=>{
+          new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_d0b705b3c7.mp3?filename=correct-2-46134.mp3").play();
+          showStatus(`✅ เช็คชื่อสำเร็จ: ${name}`, "success");
+          document.getElementById('name').value = '';
+        }).catch(()=>{
+          showStatus("❌ เกิดข้อผิดพลาด", "error");
+        });
+      }
+    }
+
+    QRCode.toCanvas(document.createElement('canvas'), window.location.href, { width: 100 }, function(err, canvas){
+      if (!err) document.getElementById('qr').appendChild(canvas);
+    });
+  </script>
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>
